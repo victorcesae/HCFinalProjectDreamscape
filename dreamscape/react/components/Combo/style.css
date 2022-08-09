@@ -1,0 +1,78 @@
+.combos{
+  width: 100%;
+  margin: auto;
+}
+
+.combo{
+  border: 1px solid #c4c4c5;
+  background-color: rgb(243, 244, 246);
+  margin: .2rem;
+  border-radius: .5rem;
+  padding: .4rem;
+}
+
+.combo a{
+  text-decoration: none;
+  color: rgb(72, 72, 72);
+}
+
+.combo table{
+  width: 100%;
+}
+thead{
+  width: 100%;
+}
+h4{
+  border-bottom: 1px solid #dfe0e2;
+  
+}
+.preetieCombo:hover{
+  background-color: #dcd9d9;
+  border-radius: .5rem;
+  box-shadow: 0 0 .5px .5px #c4c4c5;
+
+}
+.preetieCombo img{
+  max-width: 70px;
+}
+.showProduct{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.buttons button{
+  text-decoration: none;
+  color: white;
+
+}
+
+a{
+  text-decoration: none;
+}
+
+.showImage {
+  display: block;
+  position: fixed;
+  width: 300px;
+  max-width: 100%;
+  height: auto;
+  box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px;
+  background-color: transparent;
+  z-index: 999999;
+  top: 0;
+  left: 50%;
+  padding: 0;
+  margin: 0;
+}
+
+.imgTag{
+  object-fit: cover;
+  width: 300px;
+  max-width: 100%;
+  height: auto;
+  resize: both;
+  cursor: move;
+  padding: auto;
+  margin: auto;
+}

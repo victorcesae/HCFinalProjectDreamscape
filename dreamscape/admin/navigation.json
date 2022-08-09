@@ -1,0 +1,8 @@
+{
+  "section": "orders",
+  "titleId": "smart-suggestion.navigation.label",
+  "path": "/admin/smart-suggestion",
+  
+  "searchKeyWordsHelpers": "smart-suggestion.navigation.search.kws"
+
+}

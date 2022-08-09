@@ -1,0 +1,185 @@
+import json
+import boto3
+import os
+import uuid
+from boto3.dynamodb.conditions import Key
+from datetime import datetime
+import itertools
+
+
+
+def responseApi(status,body):
+    return {
+        "statusCode": status,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": body
+    }
+
+
+def products_combinations(orders_list):
+    orders_list_unraveled = []
+    ocurrency_counter = []
+    combination_list = []
+    counter = 0
+
+    """ Os fors abaixo geram a combinacao com metodo combination do modulo
+    itertools"""
+    for orders in orders_list:
+        # Impede que SKUs de mesmo ID estejam no mesmo pedido
+        orders = list(set(orders))
+        # Ordena a lista de menor para maior
+        orders.sort()
+        # O combinations gera combinações de 2 itens até o tamanho da lista
+        for index in range(2, 6):
+            if orders not in orders_list_unraveled:
+                orders_list_unraveled.append(list(
+                    map(list, itertools.combinations(orders, index))))
+    """ O combinations gera um nível a mais de lista, então o código abaixo
+    extrai um nível de lista"""
+    orders_list_unraveled = [
+        element for sublist in orders_list_unraveled for element in sublist]
+
+    # Os dois for comparam cada pedido com todos os da lista
+    for n in orders_list_unraveled:
+        for i in orders_list_unraveled:
+            if n == i:
+                counter += 1
+        # Ordena n para a comparação (para [1,2] ser igual a [2,1])
+        n.sort()
+        # O if impede que pedidos iguais sejam adicionados repetidamente
+        if n not in combination_list:
+            ocurrency_counter.append(counter)
+            combination_list.append(n)
+        counter = 0
+    """Junta as duas lista em uma só tupla. O primeiro número representa as
+    repeticoes e a lista representa o pedido com a ID dos itens"""
+    ranked_orders_list = list(zip(ocurrency_counter, combination_list))
+    # Arruma a lista pela ordem decrescente de repeticoes do pedido
+    ranked_orders_list.sort(reverse=True)
+
+    ranked_orders_dict = [{"Ocorrencia": i[0], "ID": i[1]}
+                          for i in ranked_orders_list]
+
+    return ranked_orders_dict
+
+
+def insertIntoTable(table, combination, order):
+    try:
+        table.put_item(
+            Item={
+                'combination': ",".join(combination["ID"]),
+                'combinationId': f"{uuid.uuid4()}",
+                "orderDate": order["orderDate"],
+                "createDate": datetime.now().strftime("%Y-%m-%d"),
+                "occurrences": combination["Ocorrencia"],
+                "showInShop": False,
+            }
+        )
+        return True
+    except Exception as e:
+        return e
+
+
+def lambda_handler(event, context):
+    client = boto3.resource('dynamodb')
+    table = client.Table(os.environ['TABLE'])
+
+    # combination = ",".join(event['body'][0])
+    if not event['body']:
+        return responseApi(400, {"message": "body is required"})
+    event['body'] = json.loads(event['body'])
+    if len(event['body']) <= 0:
+        return responseApi(400, {"message": "items is required"})
+
+    for order in event['body']:
+        countError = 0
+        countSuccess = 0
+        errors = []
+        if order is None:
+            countError += 1
+            errors.append('No items in order')
+            continue
+        if "status" in order:
+            if order["status"] == "canceled" and order["status"] == "cancel":
+                countError += 1
+                errors.append('Order is canceled')
+                continue
+        if not 'items' in order:
+            countError += 1
+            errors.append('No items in order')
+            continue
+
+        combinations = products_combinations(order["items"])
+        for combination in combinations:
+            try:
+                response = table.query(
+                    KeyConditionExpression=Key('combination').eq(",".join(combination["ID"]))
+                )
+                # Items []
+                # []
+                if 'Items' in response:
+                    if len(response["Items"]) > 0:
+                        updateCombination = response["Items"][0]
+                        updateCombination["occurrences"] = int(updateCombination["occurrences"]) + combination["Ocorrencia"]
+
+                        table.update_item(
+                            Key={
+                                'combination': updateCombination["combination"],
+                                'combinationId': updateCombination["combinationId"]
+                            },
+                            UpdateExpression="set occurrences = :r",
+                            ExpressionAttributeValues={
+                                ':r': updateCombination["occurrences"],
+                            }
+                        )
+
+                    else:
+                        resultInserted = insertIntoTable(
+                            table, combination, order)
+                        if resultInserted != True:
+                            raise resultInserted
+
+                else:
+                    resultInserted = insertIntoTable(table, combination, order)
+                    if resultInserted != True:
+                        raise resultInserted
+
+                countSuccess += 1
+            except Exception as e:
+                countError += 1
+                errors.append(
+                    f"Combinação {','.join(combination['ID'])} não pode ser criada")
+
+    if countError > 0:
+        if countSuccess == 0:
+            return responseApi(200, json.dumps({
+                'statusCode': '200',
+                "success": countSuccess,
+                "errors":  countError,
+                "errorInfo": errors,
+                "message": "Não há combinações para serem criadas e algumas combinações apresentaram error"
+            }))
+
+        return responseApi(200, json.dumps({
+            "statusCode": "200",
+            "success": countSuccess,
+            "errors":  countError,
+            "errorInfo": errors,
+            "message": "Algumas combinações apresentaram error"
+        }))
+
+    else:
+        if countSuccess == 0:
+            return responseApi(200, json.dumps({
+                'statusCode': '200',
+                "success": countSuccess,
+                "message": "Não há combinações para serem criadas"
+            }))
+
+        return responseApi(200, json.dumps({
+            'statusCode': '200',
+            "success": countSuccess,
+            "message": "Todas as combinações foram criadas com sucesso"
+        }))

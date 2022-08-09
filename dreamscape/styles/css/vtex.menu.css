@@ -1,0 +1,26 @@
+.styledLinkContent--text-header {
+  color: #ffffff;
+}
+
+.styledLinkContent--text-subheader {
+  color: #141f31;
+}
+
+@media only screen and (max-width: 1025px) {
+  .styledLinkContent {
+    color: #141f31;
+  }
+
+  .submenuContainer {
+    position: absolute;
+  }
+
+  .menuContainerNav{
+    width: 100%;
+    padding: 2rem;
+  }
+}
+
+.styledLinkContent--text-submenu {
+  margin-left: 27%;
+}

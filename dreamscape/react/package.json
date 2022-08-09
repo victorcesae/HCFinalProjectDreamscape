@@ -1,0 +1,19 @@
+{
+  "name": "dreamscape",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "@types/node": "^18.6.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vtex/styleguide": "^9.146.1",
+    "axios": "^0.27.2",
+    "react-intl": "3.9.1"
+  }
+}
